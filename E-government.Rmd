@@ -1,0 +1,58 @@
+1. Digitalization
+
+```{r setup, include = FALSE}
+library(tidyverse)
+```
+
+```{r data, include = FALSE}
+data_EGOV_ori <- read.csv("./data/EGOV_DATA.csv")
+region_list   <- read.csv("./data/all.csv")
+
+```
+
+```{r regional_matching, include=FALSE}
+region_list_sub <- region_list %>% 
+                   select(name, region) %>% 
+                   rename("Country" =  name)
+
+data_EGOV_temp <- data_EGOV_ori %>% 
+                  mutate(Country = ifelse(str_sub(Country.Name, start = -1, end = -1) == " ", #delete the last white space
+                                          str_sub(Country.Name, start =  1, end = -2),
+                                          Country.Name)) %>% 
+                  left_join(region_list_sub, by = "Country")
+
+# Na cleaning
+no_match_list  <- unique(data_EGOV_temp$Country.Name[is.na(data_EGOV_temp$region)]) # countries with no match
+
+#no_match_list
+
+no_match_table <- data.frame(Country = no_match_list,
+                             region = c("Asia", "Europe", "Americas", "Africa", "Europe",
+                                        "Asia", "Africa", "Asia", "Americas", "Africa"))
+
+# re-merge
+data_EGOV <- data_EGOV_temp %>% 
+             left_join(no_match_table, by = c("Country.Name" = "Country")) %>% 
+             mutate(region = ifelse(is.na(region.x), region.y, region.x)) %>%
+             select(-c(region.x, region.y))
+
+
+#sum(is.na(data_EGOV$region)) #confirmation
+
+```
+
+```{r chart_1, echo= FALSE}
+chart_1 <- data_EGOV %>% 
+           filter(Survey.Year ==2020) %>% 
+  ggplot(aes(y = E.Government.Index, color = region, fill = region, )) +
+  #aes(x = stat(count)/sum(stat(count))) +
+  geom_density(alpha = 1/10) +
+  labs(title   = "Distribution of E-Government Index : 2020",
+       x       = "Density",
+       y       = "E-Government Index",
+       caption = "Source: UN E-Government Development Index \n
+                  Region is based on the UN.")
+  
+chart_1
+```
+
