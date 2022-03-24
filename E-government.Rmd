@@ -54,5 +54,32 @@ chart_1 <- data_EGOV %>%
                   Region is based on the UN.")
   
 chart_1
+
+#ggsave("chart_1.png", chart_1)
+```
+```{r chart_2, echo = FALSE}
+data_EGOV_region <- read.csv("./data/EGOV_REGION_DATA_2020_EGDI.csv")
+
+data_EGOV_region %>% 
+  ggplot(aes(x = Region.or.Country, y = X2020.EGDI.Average))+
+  geom_bar()
+
+data_EGOV_region %>% 
+      filter(Region.or.Country != "World") %>% 
+      rename("Region" = Region.or.Country) %>% 
+      ggplot(aes(x = Region, y = X2020.EGDI.Average,
+                 color = Region, fill = Region))+
+          geom_bar(stat ="identity", alpha = 5/10) +
+          coord_flip()+
+          labs(title  = "E-Government Index by Region: 2020",
+               y      = "E-Government Index",
+               x      = "Region",
+              caption = "Source: UN E-Government Development Index \n
+                         Region is based on the UN.") +
+          geom_hline(aes(yintercept = 
+                           data_EGOV_region$X2020.EGDI.Average[data_EGOV_region$Region.or.Country == "World"])) + 
+          annotate("text", x=1, y=0.7, label= "World Average")
+  ggsave(filename = "chart_2.png")
+
 ```
 
