@@ -91,3 +91,20 @@ write.csv(data_merged, "./data/data_merged.csv")
 
 ```
 
+```{r desctiptive, include= }
+data_merged %>% 
+  filter(region == "Europe") %>%
+  filter(Survey.Year == 2020) %>% 
+ggplot(aes(x = E.Government.Index, y = v2xel_frefair)) +
+  geom_point()
+
+data_merged %>% 
+  filter(region != "Europe") %>%
+  filter(Survey.Year == 2020) %>% 
+ggplot(aes(x = E.Government.Index, y = v2xel_frefair)) +
+  geom_point()
+
+
+
+```
+
