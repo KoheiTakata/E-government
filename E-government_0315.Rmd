@@ -1,6 +1,8 @@
 ```{r setup, include = FALSE}
+rm(list = ls())
 library(tidyverse)
 library(haven)
+
 ```
 
 ```{r data, include = FALSE}
@@ -8,7 +10,7 @@ data_EGOV_ori <- read.csv("./data/EGOV_DATA.csv")
 region_list   <- read.csv("./data/Country_list.csv")
 
 data_PS       <- read_dta("./data/ps_data.dta")
-data_VD       <- read.csv("./data/VDem_data.csv")
+data_VD       <- readRDS("./data/V-Dem-CY-Full+Others-v12.rds")
 
 ```
 
@@ -53,20 +55,15 @@ data_EGOV <- data_EGOV_temp %>%
             
 
 #sum(is.na(data_EGOV$region)) #confirmation
-
 ```
 
 
 ```{r data_combine, include= TRUE}
 
-data_PS_temp <- data_PS %>% 
-                filter(year > 1999) %>% 
-                select(-c("country_name", "country_id", "ccode"))
 
-
-
-VD_vars <- c("v2x_polyarchy", "v2x_accountability", "v2x_ex_confidence", "v2x_ex_direlect", "v2x_ex_hereditary",                  "v2x_ex_military", "v2x_ex_party", "v2x_neopat", "v2xnp_client", "v2xnp_pres", "v2xnp_regcorr", 
-             "v2x_civlib", "v2x_clphy", "v2x_clpol", "v2x_clpriv", "v2xpe_exlecon", "v2xpe_exlgeo",
+VD_vars <- c("v2x_polyarchy", "v2x_libdem","v2x_accountability", "v2x_ex_confidence", "v2x_ex_direlect",
+             "v2x_ex_hereditary", "v2x_ex_military", "v2x_ex_party", "v2x_neopat", "v2xnp_client", "v2xnp_pres",
+             "v2xnp_regcorr", "v2x_civlib", "v2x_clphy", "v2x_clpol", "v2x_clpriv", "v2xpe_exlecon", "v2xpe_exlgeo",
              "v2xpe_exlpol", "v2xpe_exlsocgr", "v2x_corr", "v2x_execorr", "v2x_pubcorr",
              "v2x_rule", "v2xdd_i_ci", "v2xdd_i_rf", "v2xdd_i_or", "v2xdd_i_pl", "v2xdd_cic",
              "v2xdd_toc", "v2xcs_ccsi", "v2x_elecreg", "v2xex_elecreg", "v2xlg_elecreg", "v2x_EDcomp_thick",
@@ -76,19 +73,22 @@ VD_vars <- c("v2x_polyarchy", "v2x_accountability", "v2x_ex_confidence", "v2x_ex
              "v2x_jucon", "v2xlg_legcon", "v2elembaut", "v2elfrfair",
              "v2expathhs", "v2mecenefi", "v2cafres")
 
+data_PS_temp <- data_PS %>% 
+                filter(year > 1999) %>% 
+                select(-c("country_name", "country_id", "ccode")) %>% 
+                select(-colnames(data_PS)[colnames(data_PS) %in% VD_vars])
+
+
 data_VD_temp  <- data_VD %>% 
                  select(c("year", "country_text_id", VD_vars))
 
-
-colnames(data_merged)
-
-
 data_merged <-data_EGOV %>% 
-                  left_join(data_PS_temp, by = c("Survey.Year" = "year", "ID" = "country_text_id")) %>% 
-                  left_join(data_VD_temp, by = c("Survey.Year" = "year", "ID" = "country_text_id"))
+              left_join(data_PS_temp, by = c("Survey.Year" = "year", "ID" = "country_text_id")) %>% 
+              left_join(data_VD_temp, by = c("Survey.Year" = "year", "ID" = "country_text_id"))
+
+
 
 write.csv(data_merged, "./data/data_merged.csv")
-
 ```
 
 ```{r desctiptive, include= }
@@ -105,6 +105,33 @@ ggplot(aes(x = E.Government.Index, y = v2xel_frefair)) +
   geom_point()
 
 
+data_merged %>% 
+  filter(region == "Europe") %>%
+  filter(Survey.Year == 2020) %>%
+  select(is.numeric) %>% 
+  drop_na() %>% 
+  cor()
+
+
+```
+
+```{r party strength, include= TRUE}
+install.packages("vdemdata")
+
+```
+
+
+
+```{r LDI, include=TRUE}
+##install.packages("cartography")
+#library(cartography)
+
+# Load data
+#data(nuts2006)
+
+# Build a choropleth
+#choroLayer(spdf = nuts2.spdf, df = nuts2.df, var = "pop2008" , legend.pos = "right")
+#title("Population in 2008")
 
 ```
 

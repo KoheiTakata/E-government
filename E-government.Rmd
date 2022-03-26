@@ -6,7 +6,7 @@ library(tidyverse)
 
 ```{r data, include = FALSE}
 data_EGOV_ori <- read.csv("./data/EGOV_DATA.csv")
-region_list   <- read.csv("./data/all.csv")
+region_list   <- read.csv("./data/Country_list.csv")
 
 ```
 
@@ -56,33 +56,63 @@ chart_1 <- data_EGOV %>%
 chart_1
 
 #ggsave("chart_1.png", chart_1)
-```
+``` 
+
 ```{r chart_2, echo = FALSE}
 data_EGOV_region <- read.csv("./data/EGOV_REGION_DATA_2020_EGDI.csv")
 
-data_EGOV_region %>% 
-  ggplot(aes(x = Region.or.Country, y = X2020.EGDI.Average))+
-  geom_bar()
 
-data_EGOV_region %>% 
-      filter(Region.or.Country != "World") %>% 
-      rename("Region" = Region.or.Country) %>% 
-      ggplot(aes(x = Region, y = X2020.EGDI.Average,
-                 color = Region, fill = Region))+
-          geom_bar(stat ="identity", alpha = 5/10) +
-          coord_flip()+
-          labs(title  = "E-Government Index by Region: 2020",
-               y      = "E-Government Index",
-               x      = "Region",
-              caption = "Source: UN E-Government Development Index \n
-                         Region is based on the UN.") +
-          geom_hline(aes(yintercept = 
-                           data_EGOV_region$X2020.EGDI.Average[data_EGOV_region$Region.or.Country == "World"])) + 
-          annotate("text", x=1, y=0.7, label= "World Average")
+chart_2 <- data_EGOV_region %>% 
+            filter(Region.or.Country != "World") %>% 
+            rename("Region" = Region.or.Country) %>% 
+            ggplot(aes(x = Region, y = X2020.EGDI.Average,
+                       color = Region, fill = Region))+
+                geom_bar(stat ="identity", alpha = 5/10) +
+                coord_flip()+
+                labs(title  = "E-Government Index by Region: 2020",
+                     y      = "E-Government Index",
+                     x      = "Region",
+                    caption = "Source: UN E-Government Development Index \n
+                               Region is based on the UN.") +
+                geom_hline(aes(yintercept = 
+                                 data_EGOV_region$X2020.EGDI.Average[data_EGOV_region$Region.or.Country == "World"])) + 
+                annotate("text", x=1, y=0.7, label= "World Average")
   ggsave(filename = "chart_2.png")
 
 ```
 ```{r }
+#install.packages("gridExtra")
 
+chart_1 <- data_EGOV %>% 
+           filter(Survey.Year ==2020) %>% 
+            ggplot(aes(y = E.Government.Index, color = region, fill = region, )) +
+            #aes(x = stat(count)/sum(stat(count))) +
+            geom_density(alpha = 1/10) +
+            labs(title   = "",
+                 x       = "Density",
+                 y       = "E-Government Index",
+                 caption = "Source: UN E-Government Development Index \n
+                            Regional classificstion is based on the UN.")
+
+
+chart_2 <- data_EGOV_region %>% 
+            filter(Region.or.Country != "World") %>% 
+            rename("Region" = Region.or.Country) %>% 
+            ggplot(aes(x = Region, y = X2020.EGDI.Average,
+                       color = Region, fill = Region))+
+                geom_bar(stat ="identity", alpha = 5/10) +
+#                coord_flip()+
+                labs(title  = "E-Government Index by Region: 2020",
+                     y      = "E-Government Index",
+                     x      = "Region",
+                     caption= "   \n  ") +
+                geom_hline(aes(yintercept = 
+                                 data_EGOV_region$X2020.EGDI.Average[data_EGOV_region$Region.or.Country == "World"])) + 
+                annotate("text", x=1.4, y=0.7, label= "World Average")+
+                theme(legend.position = "none")
+
+chart_3 <- gridExtra::grid.arrange(chart_2, chart_1, nrow = 1)
+ggsave(filename = "chart_3.png", chart_3, width = 10, height = 6 )
+help(ggsave)
 ```
 
