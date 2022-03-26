@@ -52,14 +52,60 @@ data_EGOV <- data_EGOV_temp %>%
              mutate(ID = ifelse(is.na(ID.x), ID.y, ID.x)) %>%
              select(-c(ID.x, ID.y))
              
-            
-
+          
 #sum(is.na(data_EGOV$region)) #confirmation
 ```
 
 
-```{r data_combine, include= TRUE}
+```{r party strength, include= TRUE}
+#gen v2psswitch_neg = -1 * v2psswitch
+#egen v2psswitch_neg_std = std(v2psswitch_neg)
+#egen v2pscohesv_std = std(v2pscohesv)
+#gen v2pscnslnl_neg = -1 * v2pscnslnl
+#egen v2pscnslnl_neg_std = std(v2pscnslnl_neg)
+#egen v2psprlnks_std = std(v2psprlnks)
+#egen v2psorgs_std = std(v2psorgs)
+#egen v2psprbrch_std = std(v2psprbrch)
+#gen ps = (v2pscohesv_std + v2psswitch_neg_std + v2pscnslnl_neg_std + v2psprlnks_std + v2psorgs_std + #v2psprbrch_std)/6 
 
+data_VD_2000 <-data_VD %>% 
+               filter(year > 1999) %>% 
+               mutate(v2pscohesv_std     = (   v2pscohesv - mean(v2pscohesv))   /sd(   v2pscohesv),
+                      v2pscnslnl_neg_std = (-1*v2pscnslnl - mean(-1*v2pscnslnl))/sd(-1*v2pscnslnl),
+                      v2psprlnks_std     = (   v2psprlnks - mean(v2psprlnks))   /sd(   v2psprlnks),
+                      v2psorgs_std       = (   v2psorgs   - mean(v2psorgs))     /sd(   v2psorgs  ),
+                      v2psprbrch_std     = (   v2psprbrch - mean(v2psprbrch))   /sd(   v2psprbrch),
+                      ps_2020 = (v2pscohesv_std + v2pscnslnl_neg_std + v2psprlnks_std 
+                                 + v2psorgs_std + v2psprbrch_std)/5)
+
+data_VD_2000 %>% 
+        left_join(data_PS, by = c("country_text_id", "year")) %>% 
+        ggplot(aes(x = ps_2020, y = ps))+
+        geom_point()
+
+```
+
+```{r temp, include=FALSE}
+temp <-data_PS %>% 
+       filter(year > 1999) %>% 
+       mutate(v2psswitch_neg_std = (-1*v2psswitch - mean(-1*v2psswitch))/sd(-1*v2psswitch),
+              v2pscohesv_std     = (   v2pscohesv - mean(v2pscohesv))   /sd( 　v2pscohesv),
+              v2pscnslnl_neg_std = (-1*v2pscnslnl - mean(-1*v2pscnslnl))/sd(-1*v2pscnslnl),
+              v2psprlnks_std     = (   v2psprlnks - mean(v2psprlnks))   /sd(   v2psprlnks),
+              v2psorgs_std       = (   v2psorgs   - mean(v2psorgs))     /sd(   v2psorgs  ),
+              v2psprbrch_std     = (   v2psprbrch - mean(v2psprbrch))   /sd(   v2psprbrch),
+              ps_new = (v2psswitch_neg_std +v2pscohesv_std + v2pscnslnl_neg_std + v2psprlnks_std 
+                                 + v2psorgs_std + v2psprbrch_std)/6)
+
+
+
+ggplot(data = temp, aes(x = ps, y = ps_new))+
+  geom_point()
+
+```
+
+
+```{r data_combine, include= TRUE}
 
 VD_vars <- c("v2x_polyarchy", "v2x_libdem","v2x_accountability", "v2x_ex_confidence", "v2x_ex_direlect",
              "v2x_ex_hereditary", "v2x_ex_military", "v2x_ex_party", "v2x_neopat", "v2xnp_client", "v2xnp_pres",
@@ -73,54 +119,31 @@ VD_vars <- c("v2x_polyarchy", "v2x_libdem","v2x_accountability", "v2x_ex_confide
              "v2x_jucon", "v2xlg_legcon", "v2elembaut", "v2elfrfair",
              "v2expathhs", "v2mecenefi", "v2cafres")
 
-data_PS_temp <- data_PS %>% 
-                filter(year > 1999) %>% 
-                select(-c("country_name", "country_id", "ccode")) %>% 
-                select(-colnames(data_PS)[colnames(data_PS) %in% VD_vars])
-
-
-data_VD_temp  <- data_VD %>% 
-                 select(c("year", "country_text_id", VD_vars))
 
 data_merged <-data_EGOV %>% 
-              left_join(data_PS_temp, by = c("Survey.Year" = "year", "ID" = "country_text_id")) %>% 
-              left_join(data_VD_temp, by = c("Survey.Year" = "year", "ID" = "country_text_id"))
-
+              left_join(data_VD_2000, by = c("Survey.Year" = "year", "ID" = "country_text_id"))
 
 
 write.csv(data_merged, "./data/data_merged.csv")
 ```
 
-```{r desctiptive, include= }
+```{r libdem, include = FALSE}
 data_merged %>% 
-  filter(region == "Europe") %>%
-  filter(Survey.Year == 2020) %>% 
-ggplot(aes(x = E.Government.Index, y = v2xel_frefair)) +
+  filter(Survey.Year == 2020,
+         region      == "Europe") %>% 
+  ggplot(aes(x = ps_2020, y = v2x_libdem))+
   geom_point()
-
-data_merged %>% 
-  filter(region != "Europe") %>%
-  filter(Survey.Year == 2020) %>% 
-ggplot(aes(x = E.Government.Index, y = v2xel_frefair)) +
-  geom_point()
-
-
-data_merged %>% 
-  filter(region == "Europe") %>%
-  filter(Survey.Year == 2020) %>%
-  select(is.numeric) %>% 
-  drop_na() %>% 
-  cor()
-
 
 ```
 
-```{r party strength, include= TRUE}
-install.packages("vdemdata")
+```{r temp_2, include = FALSE}
+data_merged %>% 
+  filter(region == "Europe") %>% 
+  filter(Survey.Year == 2014) %>% 
+  ggplot(aes(x = ps, y = E.Government.Index))+
+  geom_point()
 
 ```
-
-
 
 ```{r LDI, include=TRUE}
 ##install.packages("cartography")
