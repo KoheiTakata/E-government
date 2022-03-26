@@ -78,6 +78,22 @@ data_VD_2000 <-data_VD %>%
                       ps_2020 = (v2pscohesv_std + v2pscnslnl_neg_std + v2psprlnks_std 
                                  + v2psorgs_std + v2psprbrch_std)/5)
 
+regime <- c("LD","ED","ED+","LD","LD","LD-","LD-","LD-","LD","LD",
+            "LD","LD","ED","ED","LD-","ED","LD-","LD","LD","LD-",
+            "ED+","LD","ED+","ED","ED+","ED+","EA+")
+
+
+data_VD_EU_2020 <- data_VD_2000 %>% 
+                   filter(year == 2020,
+                          country_id %in% c(144, 148, 152, 156,157,77,158,161,164, 96,
+                          163,76,154,210,81,82,173,174,84,178,91,
+                          17,21,190,5,202,201)) %>% 
+                   select(country_name, ps_2020) %>% 
+                   mutate(regime <- regime)
+
+
+write.csv(data_VD_EU_2020, "./data/data_VD_EU_2020.csv")
+
 data_VD_2000 %>% 
         left_join(data_PS, by = c("country_text_id", "year")) %>% 
         ggplot(aes(x = ps_2020, y = ps))+
@@ -135,7 +151,6 @@ data_merged %>%
   geom_point()
 
 
-
 ```
 
 ```{r temp_2, eval=FALSE, include=FALSE}
@@ -146,6 +161,7 @@ data_merged %>%
   geom_point()
 
 ```
+
 
 ```{r LDI, include=TRUE}
 ##install.packages("cartography")
