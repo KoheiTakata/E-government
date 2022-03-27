@@ -2,13 +2,12 @@
 rm(list = ls())
 library(tidyverse)
 library(haven)
-
 ```
+
 
 ```{r data, include = FALSE}
 data_EGOV_ori <- read.csv("./data/EGOV_DATA.csv")
 region_list   <- read.csv("./data/Country_list.csv")
-
 data_PS       <- read_dta("./data/ps_data.dta")
 data_VD       <- readRDS("./data/V-Dem-CY-Full+Others-v12.rds")
 
@@ -16,44 +15,66 @@ data_VD       <- readRDS("./data/V-Dem-CY-Full+Others-v12.rds")
 
 
 ```{r regional_matching, include=FALSE}
+
+## list for country name
 region_list_sub1 <- region_list %>% 
                     select(name, region) %>% 
                     rename("Country" =  name)
 
+## list for country ID 
 region_list_sub2 <- region_list %>% 
                     select(name, alpha.3) %>% 
                     rename("Country" =  name) %>% 
                     rename("ID" =  alpha.3)
 
-
+## merge with EGOV data
 data_EGOV_temp <- data_EGOV_ori %>% 
-                  mutate(Country = ifelse(str_sub(Country.Name, start = -1, end = -1) == " ", #delete the last white space
-                                          str_sub(Country.Name, start =  1, end = -2),
+                  mutate(Country = 
+                           ifelse(str_sub(Country.Name, start = -1, end = -1) == " ", #delete the last white space
+                                  str_sub(Country.Name, start =  1, end = -2),
                                           Country.Name)) %>% 
-                  left_join(region_list_sub1, by = "Country")
+                  left_join(region_list_sub1, by = "Country")  
 
-# Na cleaning
+## Na cleaning
 no_match_list  <- unique(data_EGOV_temp$Country.Name[is.na(data_EGOV_temp$region)]) # countries with no match
 
-#no_match_list
 
+## no_match_list
 no_match_table <- data.frame(Country = no_match_list,
                              region = c("Asia", "Europe", "Americas", "Africa", "Europe",
                                         "Asia", "Africa", "Asia", "Americas", "Africa"),
                              ID     = c("KOR", "MDA", "BOL", "CIV", "CZE",
                                         "PRK","COD", "GEO", "VEN", "TZA"))
 
-# re-merge
+## re-merge
 data_EGOV <- data_EGOV_temp %>% 
-             left_join(no_match_table, by = c("Country.Name" = "Country")) %>% 
-             mutate(region = ifelse(is.na(region.x), region.y, region.x)) %>%
-             select(-c(region.x, region.y)) %>% 
-             left_join(region_list_sub2, by = "Country") %>% 
-             mutate(ID = ifelse(is.na(ID.x), ID.y, ID.x)) %>%
-             select(-c(ID.x, ID.y))
+             left_join(no_match_table, by = c("Country.Name" = "Country")) %>%  ## merge with EGOV data
+             mutate(region = ifelse(is.na(region.x), region.y, region.x)) %>%   ## integrate region cols
+             select(-c(region.x, region.y)) %>%                                 ## remove duplication
+             left_join(region_list_sub2, by = "Country") %>%                    ## merge ID data
+             mutate(ID = ifelse(is.na(ID.x), ID.y, ID.x)) %>%                   ## integrate ID cols
+             select(-c(ID.x, ID.y))                                             ## remove duplication
              
           
 #sum(is.na(data_EGOV$region)) #confirmation
+```
+```{r temp_1, eval=FALSE, include=FALSE}
+
+## reproduction of party strength index
+temp <-data_PS %>% 
+       filter(year > 1999) %>% 
+       mutate(v2psswitch_neg_std = (-1*v2psswitch - mean(-1*v2psswitch))/sd(-1*v2psswitch),
+              v2pscohesv_std     = (   v2pscohesv - mean(v2pscohesv))   /sd( 　v2pscohesv),
+              v2pscnslnl_neg_std = (-1*v2pscnslnl - mean(-1*v2pscnslnl))/sd(-1*v2pscnslnl),
+              v2psprlnks_std     = (   v2psprlnks - mean(v2psprlnks))   /sd(   v2psprlnks),
+              v2psorgs_std       = (   v2psorgs   - mean(v2psorgs))     /sd(   v2psorgs  ),
+              v2psprbrch_std     = (   v2psprbrch - mean(v2psprbrch))   /sd(   v2psprbrch),
+              ps_new = (v2psswitch_neg_std +v2pscohesv_std + v2pscnslnl_neg_std + v2psprlnks_std 
+                                 + v2psorgs_std + v2psprbrch_std)/6)
+
+ggplot(data = temp, aes(x = ps, y = ps_new))+
+  geom_point() ## almost identical
+
 ```
 
 
@@ -68,29 +89,30 @@ data_EGOV <- data_EGOV_temp %>%
 #egen v2psprbrch_std = std(v2psprbrch)
 #gen ps = (v2pscohesv_std + v2psswitch_neg_std + v2pscnslnl_neg_std + v2psprlnks_std + v2psorgs_std + #v2psprbrch_std)/6 
 
+# create party strength index
 data_VD_2000 <-data_VD %>% 
-               filter(year > 1999) %>% 
+               filter(year > 1999) %>%  ## standardize after 2000 (arbitrary choice)
                mutate(v2pscohesv_std     = (   v2pscohesv - mean(v2pscohesv))   /sd(   v2pscohesv),
                       v2pscnslnl_neg_std = (-1*v2pscnslnl - mean(-1*v2pscnslnl))/sd(-1*v2pscnslnl),
                       v2psprlnks_std     = (   v2psprlnks - mean(v2psprlnks))   /sd(   v2psprlnks),
                       v2psorgs_std       = (   v2psorgs   - mean(v2psorgs))     /sd(   v2psorgs  ),
                       v2psprbrch_std     = (   v2psprbrch - mean(v2psprbrch))   /sd(   v2psprbrch),
                       ps_2020 = (v2pscohesv_std + v2pscnslnl_neg_std + v2psprlnks_std 
-                                 + v2psorgs_std + v2psprbrch_std)/5)
+                                 + v2psorgs_std + v2psprbrch_std)/5) %>% 
+               left_join(select(data_PS, c("country_text_id", "year", "ps")), by = c("country_text_id", "year"))
 
+## comparison with original party strength index
 data_VD_2000 %>% 
         left_join(data_PS, by = c("country_text_id", "year")) %>% 
         ggplot(aes(x = ps_2020, y = ps))+
         geom_point()
 
-
-
 ```
 
 
 ```{r regime, include=TRUE}
-
-
+## For Younmi chart
+## regime classification data (given country ID)
 regime <- c("LD","ED","ED+","LD","LD","LD-","LD-","LD-","LD","LD",
             "LD","LD","ED","ED","LD-","ED","LD-","LD","LD","LD-",
             "ED+","LD","ED+","ED","ED+","ED+","EA+")
@@ -104,33 +126,16 @@ data_VD_EU_2020 <- data_VD_2000 %>%
                    select(country_name, ps_2020) %>% 
                    mutate(regime = regime)
 
-write.csv(data_VD_EU_2020, "./data/data_VD_EU_2020.csv")
+#write.csv(data_VD_EU_2020, "./data/data_VD_EU_2020.csv")
 
 
 ```
 
-```{r temp, eval=FALSE, include=FALSE}
-temp <-data_PS %>% 
-       filter(year > 1999) %>% 
-       mutate(v2psswitch_neg_std = (-1*v2psswitch - mean(-1*v2psswitch))/sd(-1*v2psswitch),
-              v2pscohesv_std     = (   v2pscohesv - mean(v2pscohesv))   /sd( 　v2pscohesv),
-              v2pscnslnl_neg_std = (-1*v2pscnslnl - mean(-1*v2pscnslnl))/sd(-1*v2pscnslnl),
-              v2psprlnks_std     = (   v2psprlnks - mean(v2psprlnks))   /sd(   v2psprlnks),
-              v2psorgs_std       = (   v2psorgs   - mean(v2psorgs))     /sd(   v2psorgs  ),
-              v2psprbrch_std     = (   v2psprbrch - mean(v2psprbrch))   /sd(   v2psprbrch),
-              ps_new = (v2psswitch_neg_std +v2pscohesv_std + v2pscnslnl_neg_std + v2psprlnks_std 
-                                 + v2psorgs_std + v2psprbrch_std)/6)
-
-
-
-ggplot(data = temp, aes(x = ps, y = ps_new))+
-  geom_point()
-
-```
 
 
 ```{r data_combine, include= TRUE}
 
+# important variable choices
 VD_vars <- c("v2x_polyarchy", "v2x_libdem","v2x_accountability", "v2x_ex_confidence", "v2x_ex_direlect",
              "v2x_ex_hereditary", "v2x_ex_military", "v2x_ex_party", "v2x_neopat", "v2xnp_client", "v2xnp_pres",
              "v2xnp_regcorr", "v2x_civlib", "v2x_clphy", "v2x_clpol", "v2x_clpriv", "v2xpe_exlecon", "v2xpe_exlgeo",
@@ -144,21 +149,26 @@ VD_vars <- c("v2x_polyarchy", "v2x_libdem","v2x_accountability", "v2x_ex_confide
              "v2expathhs", "v2mecenefi", "v2cafres")
 
 
+# data merged to EGOV (non continuous years...)
 data_merged <-data_EGOV %>% 
               left_join(data_VD_2000, by = c("Survey.Year" = "year", "ID" = "country_text_id"))
-
 
 write.csv(data_merged, "./data/data_merged.csv")
 ```
 
 ```{r libdem, include = FALSE}
+# checking correlation
 data_merged %>% 
-  filter(Survey.Year == 2020,
-         region      == "Europe") %>% 
+  filter(Survey.Year == 2020) %>% 
   ggplot(aes(x = ps_2020, y = v2x_libdem))+
   geom_point()
 
-
+data_merged %>% 
+  filter(Survey.Year == 2020) %>%
+  filter(region == "Europe") %>% 
+  select(ps_2020, v2x_libdem, E.Government.Index) %>% 
+  na.omit() %>% 
+  cor()
 ```
 
 ```{r temp_2, eval=FALSE, include=FALSE}
@@ -168,19 +178,13 @@ data_merged %>%
   ggplot(aes(x = ps, y = E.Government.Index))+
   geom_point()
 
+data_merged %>% 
+  filter(region == "Europe") %>% 
+  filter(Survey.Year == 2014) %>% 
+  ggplot(aes(x = v2x_libdem, y = E.Government.Index))+
+  geom_point()
+
+
 ```
 
-
-```{r LDI, include=TRUE}
-##install.packages("cartography")
-#library(cartography)
-
-# Load data
-#data(nuts2006)
-
-# Build a choropleth
-#choroLayer(spdf = nuts2.spdf, df = nuts2.df, var = "pop2008" , legend.pos = "right")
-#title("Population in 2008")
-
-```
 
