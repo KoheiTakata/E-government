@@ -58,7 +58,8 @@ data_EGOV <- data_EGOV_temp %>%
           
 #sum(is.na(data_EGOV$region)) #confirmation
 ```
-```{r temp_1, eval=FALSE, include=FALSE}
+
+```{r temp_1, include=TRUE}
 
 ## reproduction of party strength index
 temp <-data_PS %>% 
@@ -73,7 +74,11 @@ temp <-data_PS %>%
                                  + v2psorgs_std + v2psprbrch_std)/6)
 
 ggplot(data = temp, aes(x = ps, y = ps_new))+
-  geom_point() ## almost identical
+  geom_point() + ## almost identical
+  labs(title   = "calculated party strength index",
+       x       = "calculated party strength index",
+       y       = "original party strength index",
+       caption = "Caluclated party strength index is derived from data after 1999.")
 
 ```
 
@@ -103,9 +108,12 @@ data_VD_2000 <-data_VD %>%
 
 ## comparison with original party strength index
 data_VD_2000 %>% 
-        left_join(data_PS, by = c("country_text_id", "year")) %>% 
         ggplot(aes(x = ps_2020, y = ps))+
-        geom_point()
+        geom_point()+
+        labs(title   = "Party Strength Index with 5 variables after 1999",
+             x       = "Original Party Strength Index (with 6 variables)",
+             y       = "Party Strength Index with 5 variables",
+             caption = "Party strength Index is derived from data after 1999.")
 
 ```
 
@@ -151,9 +159,18 @@ VD_vars <- c("v2x_polyarchy", "v2x_libdem","v2x_accountability", "v2x_ex_confide
 
 # data merged to EGOV (non continuous years...)
 data_merged <-data_EGOV %>% 
-              left_join(data_VD_2000, by = c("Survey.Year" = "year", "ID" = "country_text_id"))
+              left_join(data_VD_2000, by = c("Survey.Year" = "year", "ID" = "country_text_id")) %>% 
+              relocate(Survey.Year, Country.Name, region, ID) %>%    ## sort variables
+              rename("year" = Survey.Year)                           ## rename variables
 
-write.csv(data_merged, "./data/data_merged.csv")
+# sort variables
+temp_varlist <- colnames(data_merged)
+temp_varlist[11:31] # unnecessary variables
+
+data <- data_merged %>% 
+        select(-temp_varlist[11:31])  ## remove unnecessary variables
+
+write.csv(data, "./data/data.csv")
 ```
 
 ```{r libdem, include = FALSE}
