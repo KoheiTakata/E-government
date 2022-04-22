@@ -1,0 +1,11 @@
+```{r setup, include=TRUE}
+rm(list = ls())
+library(tidyverse)
+library(haven)
+
+```
+
+```{r load data, include = TRUE}
+read.csv("./data/data_merged.csv")
+```
+
