@@ -6,6 +6,25 @@ library(haven)
 ```
 
 ```{r load data, include = TRUE}
-read.csv("./data/data_merged.csv")
+data <- read.csv("./data/data.csv")
+```
+
+```{r chart_1, include=TRUE}
+# year : 2020
+# target : all countries
+# x : PS index
+# y : E-gov index
+
+data %>% 
+  filter(year == 2020) %>% 
+  select(region, ID, E.Government.Index, ps_2020) %>% 
+  ggplot(aes(x = ps_2020, y = E.Government.Index, color = region))+
+  geom_point()+
+  labs(title   = "Party Strength Index and E-Government in 2020",
+       x       = "Party Strength Index",
+       y       = "E-Govenment Index",
+       caption = "Party Strength Index is derived from 5 variables by authors.")
+
+
 ```
 
