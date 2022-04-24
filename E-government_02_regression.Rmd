@@ -17,7 +17,6 @@ data <- read.csv("./data/data.csv")
 
 data %>% 
   filter(year == 2020) %>%
-  rename("Region" = region) %>% 
   select(Region, ID, E.Government.Index, ps_2020) %>% 
   ggplot(aes(x = ps_2020, y = E.Government.Index, color = Region))+
   geom_point()+
@@ -32,7 +31,6 @@ ggsave("./output/Chart_1_PS_EGOV_PLOT.jpeg")
 ```{r chart 2, include=TRUE}
 chart_a <- data %>% 
            filter(year ==2020) %>% 
-           rename("Region" = region) %>% 
            ggplot(aes(y = E.Government.Index, color = Region, fill = Region)) +
             geom_density(alpha = 1/10) +
             labs(title   = "Distribution of E-Government Index in 2020",
@@ -74,9 +72,12 @@ ggsave(filename = "./output/Chart_2_Dist_of_EGOV.png", chart_2, width = 12, heig
 
 data %>% 
   filter(year == 2020) %>%
-  rename("Region" = region) %>% 
-  select(Region, ID, E.Government.Index, e_gdppc) %>% 
-  ggplot(aes(x = e_gdppc, y = E.Government.Index, color = Region))+
+  #rename("Region" = region) %>% 
+  select(Region, ID, E.Government.Index, e_gdppc) %>%
+  group_by(ID) %>% 
+  mutate(e_gdppc_lead = lead(e_gdppc)) %>% 
+  ungroup() %>% 
+  ggplot(aes(x = e_gdppc_lead, y = E.Government.Index, color = Region))+
   geom_point()+
   labs(title   = "GDP per capita and E-Government in 2020",
        x       = "GDP per capita",
