@@ -16,15 +16,88 @@ data <- read.csv("./data/data.csv")
 # y : E-gov index
 
 data %>% 
-  filter(year == 2020) %>% 
-  select(region, ID, E.Government.Index, ps_2020) %>% 
-  ggplot(aes(x = ps_2020, y = E.Government.Index, color = region))+
+  filter(year == 2020) %>%
+  select(Region, ID, E.Government.Index, ps_2020) %>% 
+  ggplot(aes(x = ps_2020, y = E.Government.Index, color = Region))+
   geom_point()+
   labs(title   = "Party Strength Index and E-Government in 2020",
        x       = "Party Strength Index",
        y       = "E-Govenment Index",
-       caption = "Party Strength Index is derived from 5 variables by authors.")
+       caption = "Party Strength Index is derived from 5 variables by authors. Points are based on data availability")
 
+ggsave("./output/Chart_1_PS_EGOV_PLOT.jpeg")
+```
+
+```{r chart 2, include=TRUE}
+chart_a <- data %>% 
+           filter(year ==2020) %>% 
+           ggplot(aes(y = E.Government.Index, color = Region, fill = Region)) +
+            geom_density(alpha = 1/10) +
+            labs(title   = "Distribution of E-Government Index in 2020",
+                 x       = "Density",
+                 y       = "E-Government Index",
+                 caption = "Source: UN E-Government Development Index \n
+                            Regional classificstion is based on the UN.")+
+           coord_flip()
+
+
+data_EGOV_region <- read.csv("./data/EGOV_REGION_DATA_2020_EGDI.csv")
+
+chart_b <- data_EGOV_region %>% 
+           filter(Region.or.Country != "World") %>% 
+           rename("Region" = Region.or.Country) %>% 
+           ggplot(aes(x = Region, y = X2020.EGDI.Average,
+                       color = Region, fill = Region))+
+                geom_bar(stat ="identity", alpha = 5/10) +
+                coord_flip()+
+                labs(title  = "E-Government Index by Region: 2020",
+                     y      = "E-Government Index",
+                     x      = "Region",
+                     caption= "   \n  ") +
+                geom_hline(aes(yintercept = 
+                                 data_EGOV_region$X2020.EGDI.Average[data_EGOV_region$Region.or.Country == "World"])) + 
+                annotate("text", x=1.4, y=0.7, label= "World Average")+
+                theme(legend.position = "none")
+
+chart_2 <- gridExtra::grid.arrange(chart_b, chart_a, nrow = 1, widths = c(1,1))
+ggsave(filename = "./output/Chart_2_Dist_of_EGOV.png", chart_2, width = 12, height = 6 )
+
+```
+
+```{r chart 3, include=TRUE}
+# year : 2020
+# target : all countries
+# x : GDPpc index
+# y : E-gov index
+
+chart_a <- data %>% 
+            select(year, Region, ID, E.Government.Index, e_gdppc) %>%
+            group_by(ID) %>% 
+            mutate(log_e_gdppc_lead = log(lead(e_gdppc))) %>% 
+            ungroup() %>% 
+            filter(year == 2020) %>%
+            ggplot(aes(x = log_e_gdppc_lead, y = E.Government.Index, color = Region))+
+            geom_point()+
+            labs(title   = "GDP per capita and E-Government",
+                 x       = "GDP per capita (log) in 2019",
+                 y       = "E-Govenment Index in 2020",
+                 caption = "The source of GDP data is V-dem.")
+
+chart_b <- data %>% 
+            select(year, Region, ID, ps_2020, e_gdppc) %>%
+            group_by(ID) %>% 
+            mutate(log_e_gdppc_lead = log(lead(e_gdppc))) %>% 
+            ungroup() %>% 
+            filter(year == 2020) %>%
+            ggplot(aes(x = log_e_gdppc_lead, y = ps_2020, color = Region))+
+            geom_point()+
+            labs(title   = "GDP per capita and Party Strength",
+                 x       = "GDP per capita (log) in 2019",
+                 y       = "Party Strength Index in 2020",
+                 caption = "The source of GDP data is V-dem.")
+
+chart_3 <- gridExtra::grid.arrange(chart_a, chart_b, nrow = 1, widths = c(1,1))
+ggsave(filename = "./output/Chart_3_GDPPC.jpeg", chart_3, width = 12, height = 6 )
 
 ```
 

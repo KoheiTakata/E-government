@@ -161,7 +161,8 @@ VD_vars <- c("v2x_polyarchy", "v2x_libdem","v2x_accountability", "v2x_ex_confide
 data_merged <-data_EGOV %>% 
               left_join(data_VD_2000, by = c("Survey.Year" = "year", "ID" = "country_text_id")) %>% 
               relocate(Survey.Year, Country.Name, region, ID) %>%    ## sort variables
-              rename("year" = Survey.Year)                           ## rename variables
+              rename("year"   vdem = Survey.Year,
+                     "Region" = region)                           ## rename variables
 
 # sort variables
 temp_varlist <- colnames(data_merged)
