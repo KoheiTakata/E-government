@@ -20,7 +20,7 @@ indicators <- get_data360(indicator_id = c(760, #access to electricity
                    output_type = "long") %>% 
   select (-4) %>% 
   pivot_wider(names_from = Indicator ,
-               values_from = Observation) %>% 
+               values_from = Observation) 
   rename(electicity=4,
          FDI = 5,
          mobile = 6,
@@ -49,5 +49,27 @@ output_type = "long") %>%
 data_full <- merge(data_EGOV, indicators, by.x=c("year","ID"), by.y = c("Period", "Country ISO3")) %>% 
   distinct(year, ID,.keep_all= TRUE)
 
+#add data from the WB website 
+young_pop <- read.csv("young_population.csv") %>% 
+  select(2,"X2020") %>% 
+  rename(young_population= X2020) 
+
+pop_dens <- read.csv("population density.csv") %>% 
+  select(2,"X2020") %>% 
+  rename(pop_dens= X2020) 
+
+internet_use <- read.csv("internet_users.csv") %>% 
+  select(2,"X2019") %>% 
+  rename(internet_users= X2019) 
+
+#merge 
+add_data <- list(young_pop, pop_dens, internet_use)
+add_data <- add_data %>% reduce(full_join, by='Country.Code')
+
+
+data_full <- merge(data_full, add_data, by.x=c("ID"), by.y = c("Country.Code"))
+  
+
 write.csv(data_full,'dataset.csv')
+
 
