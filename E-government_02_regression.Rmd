@@ -15,15 +15,22 @@ data <- read.csv("./data/data.csv")
 # x : PS index
 # y : E-gov index
 
+gulf <- data.frame(ID = c("ARE", "SAU", "QAT", "OMN", "KWT", "BHR"),
+                   Region = rep("Asia (Gulf Countries)", 6))
+
+
 data %>% 
   filter(year == 2020) %>%
   select(Region, ID, E.Government.Index, ps_2020) %>% 
+  left_join(gulf, by = "ID") %>%
+  mutate(Region = ifelse(is.na(Region.y), Region.x, Region.y)) %>%
+  select(-c(Region.x, Region.y)) %>%
   ggplot(aes(x = ps_2020, y = E.Government.Index, color = Region))+
   geom_point()+
   labs(title   = "Party Strength Index and E-Government in 2020",
        x       = "Party Strength Index",
        y       = "E-Govenment Index",
-       caption = "Party Strength Index is derived from 5 variables by authors. Points are based on data availability")
+       caption = "Party Strength Index is derived from 5 variables by authors. Points are based on data availability.")
 
 ggsave("./output/Chart_1_PS_EGOV_PLOT.jpeg")
 ```
