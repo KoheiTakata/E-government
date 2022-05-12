@@ -30,7 +30,8 @@ data %>%
   labs(title   = "Party Strength Index and E-Government in 2020",
        x       = "Party Strength Index",
        y       = "E-Govenment Index",
-       caption = "Party Strength Index is derived from 5 variables by authors. Points are based on data availability.")
+       caption = "Party Strength Index is derived from 5 variables by authors. Points are based on data availability.")+
+  scale_color_brewer(palette="Set1")
 
 ggsave("./output/Chart_1_PS_EGOV_PLOT.jpeg")
 ```

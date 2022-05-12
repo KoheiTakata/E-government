@@ -111,7 +111,7 @@ data_VD_2000 %>%
         ggplot(aes(x = ps_2020, y = ps))+
         geom_point()+
         labs(title   = "The Comparison of Party Strength Index after 1999",
-             x       = "Original Party Strength Index (with 6 variables)",
+             x       = "Original Party Strength Index with 6 variables",
              y       = "New Party Strength Index with 5 variables",
              caption = "New Party strength Index is derived from data after 1999.")
 
