@@ -160,8 +160,8 @@ chart_5 <- data %>%
                  y       = "OSI to TII and HCI Ratio",
                  caption = "Demeaned OSI to average of TII and HCI ratio.")
 
-chart_5 <- gridExtra::grid.arrange(chart_a, chart_b, nrow = 1, widths = c(1,1))
-ggsave(filename = "./output/Chart_4_EGOV.jpeg", chart_4, width = 12, height = 6)
+chart_5
+ggsave(filename = "./output/Chart_5_OSI_re.jpeg", chart_5, width = 12, height = 6)
 
 ```
 
