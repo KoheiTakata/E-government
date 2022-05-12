@@ -110,10 +110,12 @@ data_VD_2000 <-data_VD %>%
 data_VD_2000 %>% 
         ggplot(aes(x = ps_2020, y = ps))+
         geom_point()+
-        labs(title   = "Party Strength Index with 5 variables after 1999",
+        labs(title   = "The Comparison of Party Strength Index after 1999",
              x       = "Original Party Strength Index (with 6 variables)",
-             y       = "Party Strength Index with 5 variables",
-             caption = "Party strength Index is derived from data after 1999.")
+             y       = "New Party Strength Index with 5 variables",
+             caption = "New Party strength Index is derived from data after 1999.")
+
+ggsave("./output/Chart_4_EGOV_Comp.jpeg")
 
 ```
 
@@ -161,7 +163,7 @@ VD_vars <- c("v2x_polyarchy", "v2x_libdem","v2x_accountability", "v2x_ex_confide
 data_merged <-data_EGOV %>% 
               left_join(data_VD_2000, by = c("Survey.Year" = "year", "ID" = "country_text_id")) %>% 
               relocate(Survey.Year, Country.Name, region, ID) %>%    ## sort variables
-              rename("year"   vdem = Survey.Year,
+              rename("year"   = Survey.Year,
                      "Region" = region)                           ## rename variables
 
 # sort variables
