@@ -146,3 +146,22 @@ ggsave(filename = "./output/Chart_4_EGOV.jpeg", chart_4, width = 12, height = 6)
 
 ```
 
+```{r chart OSI to other components}
+chart_5 <- data %>% 
+            filter(year == 2020) %>% 
+            mutate(avcomp            = (Telecommunication.Infrastructure.Index + Human.Capital.Index)/2,
+                   OSI_comp_ratio    = Online.Service.Index / avcomp,
+                   OSI_comp_ratio_re = OSI_comp_ratio -mean(OSI_comp_ratio)) %>%
+            filter(dense_rank(desc(OSI_comp_ratio_re)) <= 5 | dense_rank(OSI_comp_ratio_re) <= 5) %>% 
+            ggplot(aes(y = OSI_comp_ratio_re, x = reorder(ID,-OSI_comp_ratio_re))) +
+            geom_bar(stat="identity", fill = "steelblue")+
+            labs(title   = "Top/Botom 5 countries: Unbalanced OSI to TII and HCI Ratio in 2020",
+                 x       = "Country",
+                 y       = "OSI to TII and HCI Ratio",
+                 caption = "Demeaned OSI to average of TII and HCI ratio.")
+
+chart_5 <- gridExtra::grid.arrange(chart_a, chart_b, nrow = 1, widths = c(1,1))
+ggsave(filename = "./output/Chart_4_EGOV.jpeg", chart_4, width = 12, height = 6)
+
+```
+
