@@ -80,6 +80,9 @@ ggsave(filename = "./output/Chart_2_Dist_of_EGOV.png", chart_2, width = 12, heig
 
 chart_a <- data %>% 
             select(year, Region, ID, E.Government.Index, e_gdppc) %>%
+            left_join(gulf, by = "ID") %>%
+            mutate(Region = ifelse(is.na(Region.y), Region.x, Region.y)) %>%
+            select(-c(Region.x, Region.y)) %>%
             group_by(ID) %>% 
             mutate(log_e_gdppc_lead = log(lead(e_gdppc))) %>% 
             ungroup() %>% 
@@ -89,10 +92,14 @@ chart_a <- data %>%
             labs(title   = "GDP per capita and E-Government",
                  x       = "GDP per capita (log) in 2019",
                  y       = "E-Govenment Index in 2020",
-                 caption = "The source of GDP data is V-dem.")
+                 caption = "The source of GDP data is V-dem.")+
+            scale_color_brewer(palette="Set1")
 
 chart_b <- data %>% 
             select(year, Region, ID, ps_2020, e_gdppc) %>%
+            left_join(gulf, by = "ID") %>%
+            mutate(Region = ifelse(is.na(Region.y), Region.x, Region.y)) %>%
+            select(-c(Region.x, Region.y)) %>%
             group_by(ID) %>% 
             mutate(log_e_gdppc_lead = log(lead(e_gdppc))) %>% 
             ungroup() %>% 
@@ -102,10 +109,40 @@ chart_b <- data %>%
             labs(title   = "GDP per capita and Party Strength",
                  x       = "GDP per capita (log) in 2019",
                  y       = "Party Strength Index in 2020",
-                 caption = "The source of GDP data is V-dem.")
+                 caption = "The source of GDP data is V-dem.")+
+            scale_color_brewer(palette="Set1")
 
 chart_3 <- gridExtra::grid.arrange(chart_a, chart_b, nrow = 1, widths = c(1,1))
-ggsave(filename = "./output/Chart_3_GDPPC.jpeg", chart_3, width = 12, height = 6 )
+ggsave(filename = "./output/Chart_3_GDPPC.jpeg", chart_3, width = 12, height = 6)
+
+```
+
+
+```{r chart_EGOV, include=TRUE}
+chart_a <- data %>% 
+           filter(year == 2020) %>% 
+           ggplot(aes(x = Telecommunication.Infrastructure.Index, y = Online.Service.Index))+
+           geom_point()+
+           labs(title   = "Online Service Index and Other components in 2020",
+                x       = "Telecommunication Infrastructure Index",
+                y       = "Online Service Index",
+                caption = "")
+
+chart_b <- data %>% 
+           filter(year == 2020) %>% 
+           ggplot(aes(x = Human.Capital.Index, y = Online.Service.Index))+
+           geom_point()+
+           labs(title   = "",
+                x       = "Human Capital Index",
+                y       = "Online Service Index",
+                caption = "")
+
+
+chart_4 <- gridExtra::grid.arrange(chart_a, chart_b, nrow = 1, widths = c(1,1))
+ggsave(filename = "./output/Chart_4_EGOV.jpeg", chart_4, width = 12, height = 6)
+
+
+
 
 ```
 
