@@ -1,0 +1,52 @@
+---
+output:
+  pdf_document: default
+  html_document: default
+---
+```{r setup}
+rm(list = ls())
+tinytex::install_tinytex()
+#install.packages("stargazer")
+
+library(stargazer)
+```
+
+```{r load package and data, include=TRUE}
+dataset <- read.csv("./data/dataset.csv")
+
+```
+
+```{r regression_1, include = TRUE}
+formula_1 <- E.Government.Index ~ ps_2020
+formula_2 <- E.Government.Index ~ ps_2020 + log(GDP_per)
+formula_3 <- E.Government.Index ~ ps_2020 + log(GDP_per) + urban + young_population
+
+reg_1 <- lm(formula_1, data = dataset)
+reg_2 <- lm(formula_2, data = dataset)
+reg_3 <- lm(formula_3, data = dataset)
+
+
+```
+
+$$E\_Gov_i =  \alpha + \beta * party\_strength_i + \sum{\beta_j*Cov_i} + \epsilon_i$$
+
+```{r table_1, echo=FALSE, results= 'asis'}
+stargazer(reg_1,
+          reg_2,
+          reg_3,
+          covariate.labels = c("Party Strength", "GDP per capita(log)",
+                               "Urban Population", "Young Population", "Constant"),
+          #column.labels = c("2*2 DID", "Two-Way FE"),
+          #add.lines = c("State/Year FE", "No", "Yes"),
+          #notes.align = "l",
+          #notes = "\\parbox[t]{10cm}{
+          #         the parenthesis below coefficients are clustered standard error by states.}",
+          type = 'latex')
+
+```
+
+
+```{r regression_2, include=TRUE}
+#formula_4 <- Online.Service.Index ~ 
+```
+

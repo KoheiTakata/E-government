@@ -176,35 +176,4 @@ data <- data_merged %>%
 write.csv(data, "./data/data.csv")
 ```
 
-```{r libdem, include = FALSE}
-# checking correlation
-data_merged %>% 
-  filter(Survey.Year == 2020) %>% 
-  ggplot(aes(x = ps_2020, y = v2x_libdem))+
-  geom_point()
-
-data_merged %>% 
-  filter(Survey.Year == 2020) %>%
-  filter(region == "Europe") %>% 
-  select(ps_2020, v2x_libdem, E.Government.Index) %>% 
-  na.omit() %>% 
-  cor()
-```
-
-```{r temp_2, eval=FALSE, include=FALSE}
-data_merged %>% 
-  filter(region == "Europe") %>% 
-  filter(Survey.Year == 2014) %>% 
-  ggplot(aes(x = ps, y = E.Government.Index))+
-  geom_point()
-
-data_merged %>% 
-  filter(region == "Europe") %>% 
-  filter(Survey.Year == 2014) %>% 
-  ggplot(aes(x = v2x_libdem, y = E.Government.Index))+
-  geom_point()
-
-
-```
-
 
