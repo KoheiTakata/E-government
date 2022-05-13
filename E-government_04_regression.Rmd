@@ -7,13 +7,41 @@ output:
 rm(list = ls())
 tinytex::install_tinytex()
 #install.packages("stargazer")
-
 library(stargazer)
+library(tidyverse)
 ```
 
 ```{r load package and data, include=TRUE}
 dataset <- read.csv("./data/dataset.csv")
+```
 
+
+```{r joint test hypotheis, include=TRUE}
+
+test_data <- dataset %>% 
+              select(E.Government.Index, ps_2020, FDI, urban, young_population, pop_dens, GDP_per,
+                     corruption, rule_of_law, accountability, effectiveness, reg_qual) %>% 
+              mutate(GDP_per = log(GDP_per))
+
+coef_p_table <- array(data = NA, dim = c(ncol(test_data)-2 ,4),
+                      dimnames = list(colnames(test_data)[3:ncol(test_data)],
+                      c("coeff for E-GOV", "P for EGOV", "coeff for PS", "P for PS")))
+i = 1
+for (i in 1: ncol(test_data)-2){
+formula_1 <- E.Government.Index ~ test_data[,i + 2]
+formula_2 <- ps_2020            ~ test_data[,i + 2]
+
+temp_1 <- lm(formula_1, data = test_data)
+temp_2 <- lm(formula_2, data = test_data)
+
+coef_p_table[i,1:2] <- round(summary(temp_1)[["coefficients"]][2,c(1,4)],3)
+coef_p_table[i,3:4] <- round(summary(temp_2)[["coefficients"]][2,c(1,4)],3)
+
+}
+
+coef_p_table
+
+cor(test_data,use="complete.obs")[,1:2]
 ```
 
 ```{r regression_1, include = TRUE}
@@ -35,7 +63,7 @@ stargazer(reg_1,
           reg_2,
           reg_3,
           covariate.labels = c("Party Strength", "GDP per capita(log)",
-                               "Urban Population", "Young Population", "Constant"),
+                               "Urban Population Ratio", "Young Population Ratio", "Constant"),
           #column.labels = c("2*2 DID", "Two-Way FE"),
           #add.lines = c("State/Year FE", "No", "Yes"),
           #notes.align = "l",
@@ -43,10 +71,5 @@ stargazer(reg_1,
           #         the parenthesis below coefficients are clustered standard error by states.}",
           type = 'latex')
 
-```
-
-
-```{r regression_2, include=TRUE}
-#formula_4 <- Online.Service.Index ~ 
 ```
 

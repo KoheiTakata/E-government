@@ -33,7 +33,7 @@ data %>%
        caption = "Party Strength Index is derived from 5 variables by authors. Points are based on data availability.")+
   scale_color_brewer(palette="Set1")
 
-ggsave("./output/Chart_1_PS_EGOV_PLOT.jpeg")
+ggsave("./output/Fig_10_PS_EGOV_PLOT.jpeg")
 ```
 
 ```{r chart 2, include=TRUE}
@@ -68,7 +68,7 @@ chart_b <- data_EGOV_region %>%
                 theme(legend.position = "none")
 
 chart_2 <- gridExtra::grid.arrange(chart_b, chart_a, nrow = 1, widths = c(1,1))
-ggsave(filename = "./output/Chart_2_Dist_of_EGOV.png", chart_2, width = 12, height = 6 )
+ggsave(filename = "./output/Fig_2_Dist_of_EGOV.png", chart_2, width = 12, height = 6 )
 
 ```
 
@@ -113,7 +113,7 @@ chart_b <- data %>%
             scale_color_brewer(palette="Set1")
 
 chart_3 <- gridExtra::grid.arrange(chart_a, chart_b, nrow = 1, widths = c(1,1))
-ggsave(filename = "./output/Chart_3_GDPPC.jpeg", chart_3, width = 12, height = 6)
+ggsave(filename = "./output/Fig_11_GDPPC.jpeg", chart_3, width = 12, height = 6)
 
 ```
 
@@ -139,10 +139,7 @@ chart_b <- data %>%
 
 
 chart_4 <- gridExtra::grid.arrange(chart_a, chart_b, nrow = 1, widths = c(1,1))
-ggsave(filename = "./output/Chart_4_EGOV.jpeg", chart_4, width = 12, height = 6)
-
-
-
+ggsave(filename = "./output/Fig_08_EGOV.jpeg", chart_4, width = 12, height = 6)
 
 ```
 
@@ -161,7 +158,7 @@ chart_5 <- data %>%
                  caption = "Demeaned OSI to average of TII and HCI ratio.")
 
 chart_5
-ggsave(filename = "./output/Chart_5_OSI_re.jpeg", chart_5, width = 12, height = 6)
+ggsave(filename = "./output/Fig_09_OSI_re.jpeg", chart_5, width = 12, height = 6)
 
 ```
 

@@ -59,29 +59,6 @@ data_EGOV <- data_EGOV_temp %>%
 #sum(is.na(data_EGOV$region)) #confirmation
 ```
 
-```{r temp_1, include=TRUE}
-
-## reproduction of party strength index
-temp <-data_PS %>% 
-       filter(year > 1999) %>% 
-       mutate(v2psswitch_neg_std = (-1*v2psswitch - mean(-1*v2psswitch))/sd(-1*v2psswitch),
-              v2pscohesv_std     = (   v2pscohesv - mean(v2pscohesv))   /sd( 　v2pscohesv),
-              v2pscnslnl_neg_std = (-1*v2pscnslnl - mean(-1*v2pscnslnl))/sd(-1*v2pscnslnl),
-              v2psprlnks_std     = (   v2psprlnks - mean(v2psprlnks))   /sd(   v2psprlnks),
-              v2psorgs_std       = (   v2psorgs   - mean(v2psorgs))     /sd(   v2psorgs  ),
-              v2psprbrch_std     = (   v2psprbrch - mean(v2psprbrch))   /sd(   v2psprbrch),
-              ps_new = (v2psswitch_neg_std +v2pscohesv_std + v2pscnslnl_neg_std + v2psprlnks_std 
-                                 + v2psorgs_std + v2psprbrch_std)/6)
-
-ggplot(data = temp, aes(x = ps, y = ps_new))+
-  geom_point() + ## almost identical
-  labs(title   = "calculated party strength index",
-       x       = "calculated party strength index",
-       y       = "original party strength index",
-       caption = "Caluclated party strength index is derived from data after 1999.")
-
-```
-
 
 ```{r party strength, include= TRUE}
 #gen v2psswitch_neg = -1 * v2psswitch
@@ -115,7 +92,7 @@ data_VD_2000 %>%
              y       = "New Party Strength Index with 5 variables",
              caption = "New Party strength Index is derived from data after 1999.")
 
-ggsave("./output/Chart_4_EGOV_Comp.jpeg")
+ggsave("./output/Fig_01_EGOV_Comp.jpeg")
 
 ```
 

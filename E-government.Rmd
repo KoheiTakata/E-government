@@ -1,107 +1,219 @@
-1. Digitalization
-
-```{r setup, include = FALSE}
+```{r setup_1, include = FALSE}
+rm(list = ls())
 library(tidyverse)
+library(haven)
 ```
 
-```{r data, include = FALSE}
+
+```{r data_1, include = FALSE}
 data_EGOV_ori <- read.csv("./data/EGOV_DATA.csv")
 region_list   <- read.csv("./data/Country_list.csv")
+data_PS       <- read_dta("./data/ps_data.dta")
+data_VD       <- readRDS("./data/V-Dem-CY-Full+Others-v12.rds")
 
 ```
+
 
 ```{r regional_matching, include=FALSE}
-region_list_sub <- region_list %>% 
-                   select(name, region) %>% 
-                   rename("Country" =  name)
 
+## list for country name
+region_list_sub1 <- region_list %>% 
+                    select(name, region) %>% 
+                    rename("Country" =  name)
+
+## list for country ID 
+region_list_sub2 <- region_list %>% 
+                    select(name, alpha.3) %>% 
+                    rename("Country" =  name) %>% 
+                    rename("ID" =  alpha.3)
+
+## merge with EGOV data
 data_EGOV_temp <- data_EGOV_ori %>% 
-                  mutate(Country = ifelse(str_sub(Country.Name, start = -1, end = -1) == " ", #delete the last white space
-                                          str_sub(Country.Name, start =  1, end = -2),
+                  mutate(Country = 
+                           ifelse(str_sub(Country.Name, start = -1, end = -1) == " ", #delete the last white space
+                                  str_sub(Country.Name, start =  1, end = -2),
                                           Country.Name)) %>% 
-                  left_join(region_list_sub, by = "Country")
+                  left_join(region_list_sub1, by = "Country")  
 
-# Na cleaning
+## Na cleaning
 no_match_list  <- unique(data_EGOV_temp$Country.Name[is.na(data_EGOV_temp$region)]) # countries with no match
 
-#no_match_list
 
+## no_match_list
 no_match_table <- data.frame(Country = no_match_list,
                              region = c("Asia", "Europe", "Americas", "Africa", "Europe",
-                                        "Asia", "Africa", "Asia", "Americas", "Africa"))
+                                        "Asia", "Africa", "Asia", "Americas", "Africa"),
+                             ID     = c("KOR", "MDA", "BOL", "CIV", "CZE",
+                                        "PRK","COD", "GEO", "VEN", "TZA"))
 
-# re-merge
+## re-merge
 data_EGOV <- data_EGOV_temp %>% 
-             left_join(no_match_table, by = c("Country.Name" = "Country")) %>% 
-             mutate(region = ifelse(is.na(region.x), region.y, region.x)) %>%
-             select(-c(region.x, region.y))
-
-
+             left_join(no_match_table, by = c("Country.Name" = "Country")) %>%  ## merge with EGOV data
+             mutate(region = ifelse(is.na(region.x), region.y, region.x)) %>%   ## integrate region cols
+             select(-c(region.x, region.y)) %>%                                 ## remove duplication
+             left_join(region_list_sub2, by = "Country") %>%                    ## merge ID data
+             mutate(ID = ifelse(is.na(ID.x), ID.y, ID.x)) %>%                   ## integrate ID cols
+             select(-c(ID.x, ID.y))                                             ## remove duplication
+             
+          
 #sum(is.na(data_EGOV$region)) #confirmation
+```
+
+
+```{r party strength, include= TRUE}
+#gen v2psswitch_neg = -1 * v2psswitch
+#egen v2psswitch_neg_std = std(v2psswitch_neg)
+#egen v2pscohesv_std = std(v2pscohesv)
+#gen v2pscnslnl_neg = -1 * v2pscnslnl
+#egen v2pscnslnl_neg_std = std(v2pscnslnl_neg)
+#egen v2psprlnks_std = std(v2psprlnks)
+#egen v2psorgs_std = std(v2psorgs)
+#egen v2psprbrch_std = std(v2psprbrch)
+#gen ps = (v2pscohesv_std + v2psswitch_neg_std + v2pscnslnl_neg_std + v2psprlnks_std + v2psorgs_std + #v2psprbrch_std)/6 
+
+# create party strength index
+data_VD_2000 <-data_VD %>% 
+               filter(year > 1999) %>%  ## standardize after 2000 (arbitrary choice)
+               mutate(v2pscohesv_std     = (   v2pscohesv - mean(v2pscohesv))   /sd(   v2pscohesv),
+                      v2pscnslnl_neg_std = (-1*v2pscnslnl - mean(-1*v2pscnslnl))/sd(-1*v2pscnslnl),
+                      v2psprlnks_std     = (   v2psprlnks - mean(v2psprlnks))   /sd(   v2psprlnks),
+                      v2psorgs_std       = (   v2psorgs   - mean(v2psorgs))     /sd(   v2psorgs  ),
+                      v2psprbrch_std     = (   v2psprbrch - mean(v2psprbrch))   /sd(   v2psprbrch),
+                      ps_2020 = (v2pscohesv_std + v2pscnslnl_neg_std + v2psprlnks_std 
+                                 + v2psorgs_std + v2psprbrch_std)/5) %>% 
+               left_join(select(data_PS, c("country_text_id", "year", "ps")), by = c("country_text_id", "year"))
+
+## comparison with original party strength index
+data_VD_2000 %>% 
+        ggplot(aes(x = ps_2020, y = ps))+
+        geom_point()+
+        labs(title   = "The Comparison of Party Strength Index after 1999",
+             x       = "Original Party Strength Index with 6 variables",
+             y       = "New Party Strength Index with 5 variables",
+             caption = "New Party strength Index is derived from data after 1999.")
+
+ggsave("./output/Fig_01_EGOV_Comp.jpeg")
 
 ```
 
-```{r chart_1, echo= FALSE}
-chart_1 <- data_EGOV %>% 
-           filter(Survey.Year ==2020) %>% 
-  ggplot(aes(y = E.Government.Index, color = region, fill = region, )) +
-  #aes(x = stat(count)/sum(stat(count))) +
-  geom_density(alpha = 1/10) +
-  labs(title   = "Distribution of E-Government Index : 2020",
-       x       = "Density",
-       y       = "E-Government Index",
-       caption = "Source: UN E-Government Development Index \n
-                  Region is based on the UN.")
-  
-chart_1
 
-#ggsave("chart_1.png", chart_1)
-``` 
-
-```{r chart_2, echo = FALSE}
-data_EGOV_region <- read.csv("./data/EGOV_REGION_DATA_2020_EGDI.csv")
+```{r regime, include=TRUE}
+## For Younmi chart
+## regime classification data (given country ID)
+regime <- c("LD","ED","ED+","LD","LD","LD-","LD-","LD-","LD","LD",
+            "LD","LD","ED","ED","LD-","ED","LD-","LD","LD","LD-",
+            "ED+","LD","ED+","ED","ED+","ED+","EA+")
 
 
-chart_2 <- data_EGOV_region %>% 
-            filter(Region.or.Country != "World") %>% 
-            rename("Region" = Region.or.Country) %>% 
-            ggplot(aes(x = Region, y = X2020.EGDI.Average,
-                       color = Region, fill = Region))+
-                geom_bar(stat ="identity", alpha = 5/10) +
-                coord_flip()+
-                labs(title  = "E-Government Index by Region: 2020",
-                     y      = "E-Government Index",
-                     x      = "Region",
-                    caption = "Source: UN E-Government Development Index \n
-                               Region is based on the UN.") +
-                geom_hline(aes(yintercept = 
-                                 data_EGOV_region$X2020.EGDI.Average[data_EGOV_region$Region.or.Country == "World"])) + 
-                annotate("text", x=1, y=0.7, label= "World Average")
-  ggsave(filename = "chart_2.png")
+data_VD_EU_2020 <- data_VD_2000 %>% 
+                   filter(year == 2020,
+                          country_id %in% c(144, 148, 152, 156,157,77,158,161,164, 96,
+                          163,76,154,210,81,82,173,174,84,178,91,
+                          17,21,190,5,202,201)) %>% 
+                   select(country_name, ps_2020) %>% 
+                   mutate(regime = regime)
+
+#write.csv(data_VD_EU_2020, "./data/data_VD_EU_2020.csv")
+
 
 ```
-```{r }
-#install.packages("gridExtra")
 
-chart_1 <- data_EGOV %>% 
-           filter(Survey.Year ==2020) %>% 
-            ggplot(aes(y = E.Government.Index, color = region, fill = region, )) +
-            #aes(x = stat(count)/sum(stat(count))) +
+
+
+```{r data_combine, include= TRUE}
+
+# important variable choices
+VD_vars <- c("v2x_polyarchy", "v2x_libdem","v2x_accountability", "v2x_ex_confidence", "v2x_ex_direlect",
+             "v2x_ex_hereditary", "v2x_ex_military", "v2x_ex_party", "v2x_neopat", "v2xnp_client", "v2xnp_pres",
+             "v2xnp_regcorr", "v2x_civlib", "v2x_clphy", "v2x_clpol", "v2x_clpriv", "v2xpe_exlecon", "v2xpe_exlgeo",
+             "v2xpe_exlpol", "v2xpe_exlsocgr", "v2x_corr", "v2x_execorr", "v2x_pubcorr",
+             "v2x_rule", "v2xdd_i_ci", "v2xdd_i_rf", "v2xdd_i_or", "v2xdd_i_pl", "v2xdd_cic",
+             "v2xdd_toc", "v2xcs_ccsi", "v2x_elecreg", "v2xex_elecreg", "v2xlg_elecreg", "v2x_EDcomp_thick",
+             "v2x_freexp", "v2x_hosabort", "v2x_legabort", "v2xcl_disc", "v2xcl_dmove", "v2xel_elecparl",
+             "v2xel_elecpres", "v2xex_elecleg", "v2xlg_leginter", "v2xme_altinf", "v2xps_party",
+             "v2x_divparctrl", "v2x_feduni", "v2x_egaldem", "v2xel_frefair", "v2xcl_rol", 
+             "v2x_jucon", "v2xlg_legcon", "v2elembaut", "v2elfrfair",
+             "v2expathhs", "v2mecenefi", "v2cafres")
+
+
+# data merged to EGOV (non continuous years...)
+data_merged <-data_EGOV %>% 
+              left_join(data_VD_2000, by = c("Survey.Year" = "year", "ID" = "country_text_id")) %>% 
+              relocate(Survey.Year, Country.Name, region, ID) %>%    ## sort variables
+              rename("year"   = Survey.Year,
+                     "Region" = region)                           ## rename variables
+
+# sort variables
+temp_varlist <- colnames(data_merged)
+temp_varlist[11:31] # unnecessary variables
+
+data <- data_merged %>% 
+        select(-temp_varlist[11:31])  ## remove unnecessary variables
+
+write.csv(data, "./data/data.csv")
+```
+
+
+```{r setup_2, include=TRUE}
+rm(list = ls())
+library(tidyverse)
+library(haven)
+
+```
+
+```{r load data_2, include = TRUE}
+data <- read.csv("./data/data.csv")
+```
+
+```{r chart_1, include=TRUE}
+# year : 2020
+# target : all countries
+# x : PS index
+# y : E-gov index
+
+gulf <- data.frame(ID = c("ARE", "SAU", "QAT", "OMN", "KWT", "BHR"),
+                   Region = rep("Asia (Gulf Countries)", 6))
+
+
+data %>% 
+  filter(year == 2020) %>%
+  select(Region, ID, E.Government.Index, ps_2020) %>% 
+  left_join(gulf, by = "ID") %>%
+  mutate(Region = ifelse(is.na(Region.y), Region.x, Region.y)) %>%
+  select(-c(Region.x, Region.y)) %>%
+  ggplot(aes(x = ps_2020, y = E.Government.Index, color = Region))+
+  geom_point()+
+  labs(title   = "Party Strength Index and E-Government in 2020",
+       x       = "Party Strength Index",
+       y       = "E-Govenment Index",
+       caption = "Party Strength Index is derived from 5 variables by authors. Points are based on data availability.")+
+  scale_color_brewer(palette="Set1")
+
+ggsave("./output/Fig_10_PS_EGOV_PLOT.jpeg")
+```
+
+```{r chart 2, include=TRUE}
+chart_a <- data %>% 
+           filter(year ==2020) %>% 
+           ggplot(aes(y = E.Government.Index, color = Region, fill = Region)) +
             geom_density(alpha = 1/10) +
-            labs(title   = "",
+            labs(title   = "Distribution of E-Government Index in 2020",
                  x       = "Density",
                  y       = "E-Government Index",
                  caption = "Source: UN E-Government Development Index \n
-                            Regional classificstion is based on the UN.")
+                            Regional classificstion is based on the UN.")+
+           coord_flip()
 
 
-chart_2 <- data_EGOV_region %>% 
-            filter(Region.or.Country != "World") %>% 
-            rename("Region" = Region.or.Country) %>% 
-            ggplot(aes(x = Region, y = X2020.EGDI.Average,
+data_EGOV_region <- read.csv("./data/EGOV_REGION_DATA_2020_EGDI.csv")
+
+chart_b <- data_EGOV_region %>% 
+           filter(Region.or.Country != "World") %>% 
+           rename("Region" = Region.or.Country) %>% 
+           ggplot(aes(x = Region, y = X2020.EGDI.Average,
                        color = Region, fill = Region))+
                 geom_bar(stat ="identity", alpha = 5/10) +
-#                coord_flip()+
+                coord_flip()+
                 labs(title  = "E-Government Index by Region: 2020",
                      y      = "E-Government Index",
                      x      = "Region",
@@ -111,8 +223,243 @@ chart_2 <- data_EGOV_region %>%
                 annotate("text", x=1.4, y=0.7, label= "World Average")+
                 theme(legend.position = "none")
 
-chart_3 <- gridExtra::grid.arrange(chart_2, chart_1, nrow = 1)
-ggsave(filename = "chart_3.png", chart_3, width = 10, height = 6 )
-help(ggsave)
+chart_2 <- gridExtra::grid.arrange(chart_b, chart_a, nrow = 1, widths = c(1,1))
+ggsave(filename = "./output/Fig_2_Dist_of_EGOV.png", chart_2, width = 12, height = 6 )
+
+```
+
+```{r chart 3, include=TRUE}
+# year : 2020
+# target : all countries
+# x : GDPpc index
+# y : E-gov index
+
+chart_a <- data %>% 
+            select(year, Region, ID, E.Government.Index, e_gdppc) %>%
+            left_join(gulf, by = "ID") %>%
+            mutate(Region = ifelse(is.na(Region.y), Region.x, Region.y)) %>%
+            select(-c(Region.x, Region.y)) %>%
+            group_by(ID) %>% 
+            mutate(log_e_gdppc_lead = log(lead(e_gdppc))) %>% 
+            ungroup() %>% 
+            filter(year == 2020) %>%
+            ggplot(aes(x = log_e_gdppc_lead, y = E.Government.Index, color = Region))+
+            geom_point()+
+            labs(title   = "GDP per capita and E-Government",
+                 x       = "GDP per capita (log) in 2019",
+                 y       = "E-Govenment Index in 2020",
+                 caption = "The source of GDP data is V-dem.")+
+            scale_color_brewer(palette="Set1")
+
+chart_b <- data %>% 
+            select(year, Region, ID, ps_2020, e_gdppc) %>%
+            left_join(gulf, by = "ID") %>%
+            mutate(Region = ifelse(is.na(Region.y), Region.x, Region.y)) %>%
+            select(-c(Region.x, Region.y)) %>%
+            group_by(ID) %>% 
+            mutate(log_e_gdppc_lead = log(lead(e_gdppc))) %>% 
+            ungroup() %>% 
+            filter(year == 2020) %>%
+            ggplot(aes(x = log_e_gdppc_lead, y = ps_2020, color = Region))+
+            geom_point()+
+            labs(title   = "GDP per capita and Party Strength",
+                 x       = "GDP per capita (log) in 2019",
+                 y       = "Party Strength Index in 2020",
+                 caption = "The source of GDP data is V-dem.")+
+            scale_color_brewer(palette="Set1")
+
+chart_3 <- gridExtra::grid.arrange(chart_a, chart_b, nrow = 1, widths = c(1,1))
+ggsave(filename = "./output/Fig_11_GDPPC.jpeg", chart_3, width = 12, height = 6)
+
+```
+
+
+```{r chart_EGOV, include=TRUE}
+chart_a <- data %>% 
+           filter(year == 2020) %>% 
+           ggplot(aes(x = Telecommunication.Infrastructure.Index, y = Online.Service.Index))+
+           geom_point()+
+           labs(title   = "Online Service Index and Other components in 2020",
+                x       = "Telecommunication Infrastructure Index",
+                y       = "Online Service Index",
+                caption = "")
+
+chart_b <- data %>% 
+           filter(year == 2020) %>% 
+           ggplot(aes(x = Human.Capital.Index, y = Online.Service.Index))+
+           geom_point()+
+           labs(title   = "",
+                x       = "Human Capital Index",
+                y       = "Online Service Index",
+                caption = "")
+
+
+chart_4 <- gridExtra::grid.arrange(chart_a, chart_b, nrow = 1, widths = c(1,1))
+ggsave(filename = "./output/Fig_08_EGOV.jpeg", chart_4, width = 12, height = 6)
+
+```
+
+```{r chart OSI to other components}
+chart_5 <- data %>% 
+            filter(year == 2020) %>% 
+            mutate(avcomp            = (Telecommunication.Infrastructure.Index + Human.Capital.Index)/2,
+                   OSI_comp_ratio    = Online.Service.Index / avcomp,
+                   OSI_comp_ratio_re = OSI_comp_ratio -mean(OSI_comp_ratio)) %>%
+            filter(dense_rank(desc(OSI_comp_ratio_re)) <= 5 | dense_rank(OSI_comp_ratio_re) <= 5) %>% 
+            ggplot(aes(y = OSI_comp_ratio_re, x = reorder(ID,-OSI_comp_ratio_re))) +
+            geom_bar(stat="identity", fill = "steelblue")+
+            labs(title   = "Top/Botom 5 countries: Unbalanced OSI to TII and HCI Ratio in 2020",
+                 x       = "Country",
+                 y       = "OSI to TII and HCI Ratio",
+                 caption = "Demeaned OSI to average of TII and HCI ratio.")
+
+chart_5
+ggsave(filename = "./output/Fig_09_OSI_re.jpeg", chart_5, width = 12, height = 6)
+
+```
+
+```{r setup_3, include=TRUE}
+rm(list = ls())
+
+```
+
+```{r load packages and data_3, include=TRUE}
+#devtools::install_github("mrpsonglao/data360r")
+library(data360r)
+
+data <- read.csv("./data/data.csv")
+```
+
+```{r import WBdata, include=TRUE}
+indicators <- get_data360(indicator_id = c(760, #access to electricity 
+                                    944, #Foreign Direct Investment
+                                    778, #Mobile Cellular Subscriptions
+                                    804, #Urban
+                                    839, #GDP Per Capita
+                                    364, #Control of Corruption
+                                    370, #Rule of Law
+                                    376, #Political Stability 
+                                    382, #Voice and Accountability 
+                                    388, #Government Effectiveness
+                                    394  #Regulatory Quality
+                                    ),
+                   timeframes = c(2019, 2020),
+                   output_type = "long") %>% 
+  select (-4) %>% 
+  pivot_wider(names_from  = Indicator,
+              values_from = Observation) %>%  
+  rename(electicity     = 4,
+         FDI            = 5,
+         mobile         = 6,
+         urban          = 7,
+         GDP_per        = 8,
+         corruption     = 9,
+         rule_of_law    = 10,
+         pol_stab       = 11,
+         accountability = 12,
+         effectiveness  = 13,
+         reg_qual       = 14
+         )
+
+WWBI <- get_data360(indicator_id = c(42285, #Individuals with secondary education as a share of private paid employee
+                                     42286, #Individuals with secondary education as a share of public paid employee
+                                     42291, #Median age of private paid employees
+                                     42292, #Median age of public paid employees
+                                     42300, #Public sector employment as a share of paid employment
+                                     42309  #Public sector employment as a share of total employment by location (Urban)
+),
+timeframes = c(2005:2018),
+output_type = "long") %>%  
+  pivot_wider(names_from  = Indicator,
+              values_from = Observation)
+
+data_full <- merge(data, indicators, by.x=c("year","ID"), by.y = c("Period", "Country ISO3")) %>% 
+  distinct(year, ID,.keep_all= TRUE)
+
+#add data from the WB website 
+young_pop <- read.csv("./data/young_population.csv") %>% 
+  select(2,"X2020") %>% 
+  rename(young_population= X2020) 
+
+pop_dens <- read.csv("./data/population_density.csv") %>% 
+  select(2,"X2020") %>% 
+  rename(pop_dens= X2020) 
+
+internet_use <- read.csv("./data/internet_users.csv") %>% 
+  select(2,"X2019") %>% 
+  rename(internet_users= X2019) 
+
+#merge 
+add_data <- list(young_pop, pop_dens, internet_use)
+add_data <- add_data %>% reduce(full_join, by='Country.Code')
+
+data_full <- merge(data_full, add_data, by.x=c("ID"), by.y = c("Country.Code"))
+  
+
+write.csv(data_full,'./data/dataset.csv')
+
+```
+
+```{r setup_4}
+rm(list = ls())
+tinytex::install_tinytex()
+#install.packages("stargazer")
+library(stargazer)
+library(tidyverse)
+```
+
+```{r load package and data, include=TRUE}
+dataset <- read.csv("./data/dataset.csv")
+```
+
+
+```{r joint test hypotheis, include=TRUE}
+
+test_data <- dataset %>% 
+              select(E.Government.Index, ps_2020, FDI, urban, young_population, pop_dens, GDP_per,
+                     corruption, rule_of_law, accountability, effectiveness, reg_qual) %>% 
+              mutate(GDP_per = log(GDP_per))
+
+coef_p_table <- array(data = NA, dim = c(ncol(test_data)-2 ,4),
+                      dimnames = list(colnames(test_data)[3:ncol(test_data)],
+                      c("coeff for E-GOV", "P for EGOV", "coeff for PS", "P for PS")))
+i = 1
+for (i in 1: ncol(test_data)-2){
+formula_1 <- E.Government.Index ~ test_data[,i + 2]
+formula_2 <- ps_2020            ~ test_data[,i + 2]
+
+temp_1 <- lm(formula_1, data = test_data)
+temp_2 <- lm(formula_2, data = test_data)
+
+coef_p_table[i,1:2] <- round(summary(temp_1)[["coefficients"]][2,c(1,4)],3)
+coef_p_table[i,3:4] <- round(summary(temp_2)[["coefficients"]][2,c(1,4)],3)
+
+}
+
+coef_p_table
+
+cor(test_data,use="complete.obs")[,1:2]
+```
+
+```{r regression_1, include = TRUE}
+formula_1 <- E.Government.Index ~ ps_2020
+formula_2 <- E.Government.Index ~ ps_2020 + log(GDP_per)
+formula_3 <- E.Government.Index ~ ps_2020 + log(GDP_per) + urban + young_population
+
+reg_1 <- lm(formula_1, data = dataset)
+reg_2 <- lm(formula_2, data = dataset)
+reg_3 <- lm(formula_3, data = dataset)
+```
+
+$$E\_Gov_i =  \alpha + \beta * party\_strength_i + \sum{\beta_j*Cov_i} + \epsilon_i$$
+
+```{r table_1, echo=FALSE, results= 'asis'}
+stargazer(reg_1,
+          reg_2,
+          reg_3,
+          covariate.labels = c("Party Strength", "GDP per capita(log)",
+                               "Urban Population Ratio", "Young Population Ratio", "Constant"),
+          type = 'latex')
+
 ```
 
