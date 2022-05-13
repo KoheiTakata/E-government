@@ -40,11 +40,21 @@ no_match_list  <- unique(data_EGOV_temp$Country.Name[is.na(data_EGOV_temp$region
 
 
 ## no_match_list
+
+## if the below yield error, it is because of language setting, try different ver of no_match_table
+
+#no_match_table <- data.frame(Country = no_match_list,
+#                             region = c("Asia", "Europe", "Americas", "Africa", "Europe",
+#                                        "Asia", "Africa", "Asia", "Americas", "Africa"),
+#                             ID     = c("KOR", "MDA", "BOL", "CIV", "CZE",
+#                                        "PRK","COD", "GEO", "VEN", "TZA"))
+
 no_match_table <- data.frame(Country = no_match_list,
-                             region = c("Asia", "Europe", "Americas", "Africa", "Europe",
+                             region = c("Asia", "Europe", "Americas", "Europe",
                                         "Asia", "Africa", "Asia", "Americas", "Africa"),
-                             ID     = c("KOR", "MDA", "BOL", "CIV", "CZE",
+                             ID     = c("KOR", "MDA", "BOL", "CZE",
                                         "PRK","COD", "GEO", "VEN", "TZA"))
+
 
 ## re-merge
 data_EGOV <- data_EGOV_temp %>% 
